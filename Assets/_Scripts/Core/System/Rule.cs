@@ -29,10 +29,11 @@ namespace GameCore
         // size of the subject(s) relative to the object
 
         List<RuleChunk> m_ruleChunks = new List<RuleChunk>();
+
         // Avoid hardcoding valid positions as they might change during development:
         // much better storing them in a dedicated hashmap.
         // Note that a RuleChunk type can have multiple valid positions within the list...
-        Dictionary<RuleChunk.ChunkType, List<uint>> m_validPositions =
+        /*Dictionary<RuleChunk.ChunkType, List<uint>> m_validPositions =
             new Dictionary<RuleChunk.ChunkType, List<uint>>
         {
         { RuleChunk.ChunkType.RULE_SUBJECT, new List<uint>{ 0 } },
@@ -41,11 +42,11 @@ namespace GameCore
         { RuleChunk.ChunkType.RULE_VERB, new List<uint>{ 1, 3 } },
         { RuleChunk.ChunkType.RULE_LOGICAL_OP, new List<uint>{ 1, 3 } },
 
-        };
+        };*/ 
 
         const int MIN_RULE_SIZE = 3;
         const int MAX_RULE_SIZE = 5;
-        /*public bool p_IsValid
+        public bool p_IsValid
         {
             get
             {
@@ -54,16 +55,15 @@ namespace GameCore
                 switch(ruleLength)
                 {
                     case MIN_RULE_SIZE:
-                        return IsValidRuleBasic(0);
+                        return IsValidRuleBasic();
                     case MAX_RULE_SIZE:
-                        return (IsValidRuleBasic(0) && ) || (IsValidRuleBasic(2)) &&
-
+                        return IsValidRuleComplete();
                     default:
                         return false;
 
                 }
             }
-        }*/
+        }
         void Start()
         {
 
@@ -75,9 +75,15 @@ namespace GameCore
 
         }
 
+
+        ////////////////////////////////////////////////////////////////////////////////////////////
+        // An actual Parser for rules seems a little overkill here. Let's keep it simple for now. //
+        ////////////////////////////////////////////////////////////////////////////////////////////
+        
+
         // By construction, a RuleBasic can be Head or Tail of RuleComplete.
         // We need to parametrise the control.
-        bool IsValidRuleBasic(int startingIdx)
+        bool IsValidRuleBasic(int startingIdx = 0)
         {
             return ((m_ruleChunks[startingIdx].p_RuleChunkType == RuleChunk.ChunkType.RULE_SUBJECT_OR_OBJECT
                        || m_ruleChunks[startingIdx].p_RuleChunkType == RuleChunk.ChunkType.RULE_SUBJECT)
@@ -112,6 +118,4 @@ namespace GameCore
             return res;
         }
     }
-
-
 }
