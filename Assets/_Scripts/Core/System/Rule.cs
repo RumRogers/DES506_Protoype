@@ -88,7 +88,13 @@ namespace GameCore
 
         bool IsValidRuleComplete()
         {
-            return false;
+            return (IsValidRuleBasic(0) &&
+                m_ruleChunks[MIN_RULE_SIZE].p_RuleChunkType == RuleChunk.ChunkType.RULE_LOGICAL_OP &&
+                (m_ruleChunks[MIN_RULE_SIZE + 1].p_RuleChunkType == RuleChunk.ChunkType.RULE_SUBJECT_OR_OBJECT ||
+                m_ruleChunks[MIN_RULE_SIZE + 1].p_RuleChunkType == RuleChunk.ChunkType.RULE_OBJECT)) ||
+                 ((m_ruleChunks[0].p_RuleChunkType == RuleChunk.ChunkType.RULE_SUBJECT_OR_OBJECT ||
+                m_ruleChunks[0].p_RuleChunkType == RuleChunk.ChunkType.RULE_OBJECT) &&
+                m_ruleChunks[1].p_RuleChunkType == RuleChunk.ChunkType.RULE_LOGICAL_OP && IsValidRuleBasic(2));
         }
 
         // Pretty prints the rule as in [ Subject Verb Object ]
@@ -106,5 +112,6 @@ namespace GameCore
             return res;
         }
     }
+
 
 }
