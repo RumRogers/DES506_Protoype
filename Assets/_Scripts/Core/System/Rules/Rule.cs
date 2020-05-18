@@ -11,6 +11,7 @@ namespace GameCore
 {
     public class Rule : MonoBehaviour
     {
+        ///////////////////////////////////////////////////////////////////////////////////////////////////
         // In the following, RuleVerb refers to a (dis)equality sign (=, !=) as decided during design
         // LogicalOperator is (for now) only meant to be a + sign (AND equivalent)
 
@@ -27,7 +28,9 @@ namespace GameCore
 
         // TODO: we should probably consider more variety? Example > obj or < obj would increase or decrease
         // size of the subject(s) relative to the object
-
+        ///////////////////////////////////////////////////////////////////////////////////////////////////
+        
+        // The blocks that currently compose this rule
         List<RuleChunk> m_ruleChunks = new List<RuleChunk>();
 
         // Avoid hardcoding valid positions as they might change during development:
@@ -42,8 +45,9 @@ namespace GameCore
         { RuleChunk.ChunkType.RULE_VERB, new List<uint>{ 1, 3 } },
         { RuleChunk.ChunkType.RULE_LOGICAL_OP, new List<uint>{ 1, 3 } },
 
-        };*/ 
+        };*/
 
+        bool m_applied;
         const int MIN_RULE_SIZE = 3;
         const int MAX_RULE_SIZE = 5;
         public bool p_IsValid
@@ -60,19 +64,22 @@ namespace GameCore
                         return IsValidRuleComplete();
                     default:
                         return false;
-
                 }
             }
         }
         void Start()
         {
-
+            m_applied = false;
         }
 
         // Update is called once per frame
         void Update()
         {
 
+            if(p_IsValid && !m_applied)
+            {
+
+            }
         }
 
 
@@ -101,6 +108,12 @@ namespace GameCore
                  ((m_ruleChunks[0].p_RuleChunkType == RuleChunk.ChunkType.RULE_SUBJECT_OR_OBJECT ||
                 m_ruleChunks[0].p_RuleChunkType == RuleChunk.ChunkType.RULE_OBJECT) &&
                 m_ruleChunks[1].p_RuleChunkType == RuleChunk.ChunkType.RULE_LOGICAL_OP && IsValidRuleBasic(2));
+        }
+
+        // Once a rule has been correctly composed, it's time to apply it to the world
+        void ApplyRule()
+        {
+            throw new System.NotImplementedException();
         }
 
         // Pretty prints the rule as in [ Subject Verb Object ]
