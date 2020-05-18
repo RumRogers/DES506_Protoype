@@ -75,8 +75,13 @@ namespace GameCore
         // Update is called once per frame
         void Update()
         {
-
+            // The boxes have just been aligned properly to form a rule
             if(p_IsValid && !m_applied)
+            {
+                ApplyRule();
+            }
+            // The boxes had been aligned properly, but are not anymore
+            else if(!p_IsValid && m_applied)
             {
 
             }
@@ -113,6 +118,7 @@ namespace GameCore
         // Once a rule has been correctly composed, it's time to apply it to the world
         void ApplyRule()
         {
+            m_applied = true;
             throw new System.NotImplementedException();
         }
 
