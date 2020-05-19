@@ -2,231 +2,6 @@
 using System.Collections.Generic;
 using UnityEngine;
 
-#region INTERFACES (STATE MACHINE AND STATE)
-public abstract class ICharacterState
-{
-    protected ICharacterStateMachine m_characterStateMachine;
-
-    public ICharacterState (ICharacterStateMachine stateMachine)
-    {
-        m_characterStateMachine = stateMachine;
-    }
-
-    public virtual IEnumerator Start()
-    {
-        yield break;
-    }
-
-    public virtual IEnumerator Move()
-    {
-        yield break;
-    }
-}
-
-public abstract class ICharacterStateMachine : MonoBehaviour
-{
-    protected ICharacterState m_state;
-
-    public void SetState(ICharacterState state)
-    {
-        m_state = state;
-        StartCoroutine(m_state.Start());
-    }
-}
-#endregion
-
-#region STATES
-public class DefaultState : ICharacterState
-{
-    Vector3 m_Velocity = Vector3.zero;
-
-    CharacterMovement m_characterMovment;
-
-    public DefaultState(CharacterMovement stateMachine) : base(stateMachine)
-    {
-        m_characterMovment = stateMachine;
-    }
-
-    public override IEnumerator Start()
-    {
-        yield return null;
-    }
-
-    public override IEnumerator Move()
-    {
-        //Directional input
-        m_characterMovment.Direction = new Vector3(Input.GetAxisRaw("Horizontal") ,0.0f , Input.GetAxisRaw("Vertical")).normalized;
-        if (m_characterMovment.Direction != Vector3.zero)
-        {
-            m_Velocity += (m_characterMovment.Direction * m_characterMovment.WalkingAcceleration) * Time.deltaTime;
-            m_Velocity = Vector3.ClampMagnitude(m_Velocity, m_characterMovment.MaxSpeed);
-        }
-        else if (Mathf.Abs(m_Velocity.x) > 0.3f || Mathf.Abs(m_Velocity.z) > 0.3f)
-        {
-            m_Velocity += (((m_Velocity.normalized) * -1) * m_characterMovment.WalkingDeceleration) * Time.deltaTime;
-        }
-        else
-        {
-            m_Velocity.x = 0.0f;
-            m_Velocity.z = 0.0f;
-        }
-
-        m_characterMovment.Velocity = new Vector3(m_Velocity.x, m_characterMovment.Velocity.y, m_Velocity.z);
-
-        //Jumping / falling state transition
-        if (m_characterMovment.IsGrounded())
-        {
-            if (Input.GetButtonDown("Jump"))
-            {
-                m_characterMovment.SetState(new JumpingState(m_characterMovment));
-            }
-        }
-        else
-        {
-            m_characterMovment.SetState(new FallingState(m_characterMovment));
-        }
-        yield return null;
-    }
-}
-
-public class PushingState : ICharacterState
-{
-    const float GRID_SIZE = 2.0f;
-    bool m_moving = false;
-    CharacterMovement m_characterMovement;
-
-    public PushingState(CharacterMovement stateMachine) : base(stateMachine)
-    {
-        m_characterMovement = stateMachine;
-        m_characterMovement.Velocity = Vector3.zero;
-    }
-
-    public override IEnumerator Start()
-    {
-        yield return null;
-    }
-
-    public override IEnumerator Move()
-    {
-        if (Input.GetAxisRaw("Horizontal") != 0 || Input.GetAxisRaw("Vertical") != 0)
-        {
-            if (!m_moving)
-            {
-                m_moving = true;
-                m_characterMovement.Direction = new Vector3(Input.GetAxisRaw("Horizontal"), 0.0f, Input.GetAxisRaw("Vertical")).normalized;
-                Vector3 finalPosition = m_characterMovement.transform.position + (m_characterMovement.Direction * GRID_SIZE);
-                Vector3 currentPosition = m_characterMovement.transform.position;
-                Vector3 movableOffset = m_characterMovement.GetClosestInteractable.position - m_characterMovement.transform.position;
-                float time = 0;
-                float timeToLerp = GRID_SIZE / m_characterMovement.PushSpeed;
-                while (true)
-                {
-                    time += Time.deltaTime;
-                    float perComp = time / timeToLerp;
-                    float curvedPerComp = m_characterMovement.GetPushMovementCurve.Evaluate(perComp);
-
-                    if (perComp > 0.99)
-                    {
-                        break;
-                    }
-                    if (m_characterMovement.GetClosestInteractable != null)
-                        m_characterMovement.GetClosestInteractable.position = Vector3.Lerp(currentPosition + movableOffset, finalPosition + movableOffset, curvedPerComp);
-
-                    m_characterMovement.transform.position = Vector3.Lerp(currentPosition, finalPosition, curvedPerComp);
-                    yield return null;
-                }
-                m_characterMovement.transform.position = finalPosition;
-                m_moving = false;
-            }
-        }
-        yield return null;
-    }
-
-}
-
-public class JumpingState : ICharacterState
-{
-    Vector3 m_Velocity = Vector3.zero;
-    CharacterMovement m_characterMovment;
-
-    public JumpingState(CharacterMovement stateMachine) : base(stateMachine)
-    {
-        m_characterMovment = stateMachine;
-        m_characterMovment.Velocity = new Vector3(m_characterMovment.Velocity.x, m_characterMovment.JumpVelocity, m_characterMovment.Velocity.z);
-        m_Velocity = m_characterMovment.Velocity;
-    }
-
-    public override IEnumerator Start()
-    {
-        yield return null;
-    }
-
-    public override IEnumerator Move()
-    {
-        //subtracting gravity from upwards velocity until forces equalise
-        m_characterMovment.Velocity += (Vector3.down * m_characterMovment.Gravity) * Time.deltaTime;
-
-        //Directional input, slower in mid air
-        m_characterMovment.Direction = new Vector3(Input.GetAxisRaw("Horizontal"), 0.0f, Input.GetAxisRaw("Vertical")).normalized;
-        if (m_characterMovment.Direction != Vector3.zero)
-        {
-            m_Velocity += (m_characterMovment.Direction * m_characterMovment.AerialAccelleration) * Time.deltaTime;
-            m_Velocity = Vector3.ClampMagnitude(m_Velocity, m_characterMovment.MaxSpeed);
-        }
-
-        m_characterMovment.Velocity = new Vector3(m_Velocity.x, m_characterMovment.Velocity.y, m_Velocity.z);
-
-        if (m_characterMovment.Velocity.y < 0)
-        {
-            m_characterMovment.SetState(new FallingState(m_characterMovment));
-        }
-        yield return null;
-    }
-
-}
-
-public class FallingState : ICharacterState
-{
-    Vector3 m_Velocity = Vector3.zero;
-    CharacterMovement m_characterMovment;
-
-    public FallingState(CharacterMovement stateMachine) : base(stateMachine)
-    {
-        m_characterMovment = stateMachine;
-        m_Velocity = m_characterMovment.Velocity;
-    }
-
-    public override IEnumerator Start()
-    {
-        yield return null;
-    }
-
-    public override IEnumerator Move()
-    {
-        m_characterMovment.Velocity += (Vector3.down * m_characterMovment.Gravity) * Time.deltaTime;
-        
-        //if grounded transition to default state
-        if (m_characterMovment.IsGrounded())
-        {
-            m_characterMovment.Velocity = new Vector3(m_characterMovment.Velocity.x, 0, m_characterMovment.Velocity.z);
-            m_characterMovment.SetState(new DefaultState(m_characterMovment));
-        }
-
-        //Directional input, slower in mid air
-        m_characterMovment.Direction = new Vector3(Input.GetAxisRaw("Horizontal"), 0.0f, Input.GetAxisRaw("Vertical")).normalized;
-        if (m_characterMovment.Direction != Vector3.zero)
-        {
-            m_Velocity += (m_characterMovment.Direction * m_characterMovment.AerialAccelleration) * Time.deltaTime;
-            m_Velocity = Vector3.ClampMagnitude(m_Velocity, m_characterMovment.MaxSpeed);
-        }
-
-        m_characterMovment.Velocity = new Vector3(m_Velocity.x, m_characterMovment.Velocity.y, m_Velocity.z);
-        yield return null;
-    }
-}
-
-#endregion
-
 public class CharacterMovement : ICharacterStateMachine
 {
     //Interacting
@@ -242,13 +17,21 @@ public class CharacterMovement : ICharacterStateMachine
     [SerializeField] float m_maxSpeed = 2.0f;
     [SerializeField] float m_walkingAcceleration = 15.0f;
     [SerializeField] float m_walkingDeceleration = 15.0f;
-    [SerializeField] float m_maxClimbableIncline = 45.0f;
     [Header("Air Movement")]
     [SerializeField] float m_aerialAccelleration = 5.0f;
     [SerializeField] float m_gravity = 9.81f;
     [SerializeField] float m_jumpVelocity = 4.5f;
+    [Header("Collision")]
+    [SerializeField] float m_maxClimbableIncline = 45.0f;
+    [SerializeField] float m_groundPadding = 0.1f;  //How far from the floor the ray should start
+    [SerializeField] float m_collisionRayLengthMultiplyer = 0.7f;   //Determines what percentage of the player's bounds to use as ray length
+    [Header("Properties (Debug)")]
+    [SerializeField] bool m_drowning = false;
+    [SerializeField] bool m_canJump = false;
+    [SerializeField] bool m_canDrown = false;
     Vector3 m_direction;
     Vector3 m_velocity = Vector3.zero;
+    Vector3 m_startPosition;
 
     //Hit info
     RaycastHit m_groundedHitInfo;
@@ -266,6 +49,11 @@ public class CharacterMovement : ICharacterStateMachine
     public float PushSpeed { get => m_pushingSpeed; }
     public float Gravity { get => m_gravity; }
     public float JumpVelocity { get => m_jumpVelocity; }
+    public Vector3 StartPosition { get => m_startPosition; }
+    public bool Drowning { get => m_drowning; set => m_drowning = value; }
+
+    public bool CanDrown { get => m_canDrown; set => m_canDrown = value; }
+    public bool CanJump { get => m_canJump; set => m_canJump = value; }
     //Pushing Getters
     public Transform GetClosestInteractable { get => m_closestInteractable; }
     public AnimationCurve GetPushMovementCurve { get => m_pushMovementCurve; }
@@ -274,6 +62,7 @@ public class CharacterMovement : ICharacterStateMachine
     // Start is called before the first frame update
     void Start()
     {
+        m_startPosition = transform.position;
         m_PlayerCollider = transform.GetComponent<CapsuleCollider>();
         SetState(new DefaultState(this));
         m_pushMovementCurve.postWrapMode = WrapMode.PingPong;
@@ -282,11 +71,15 @@ public class CharacterMovement : ICharacterStateMachine
     // Update is called once per frame
     void Update()
     {
+        if (Drowning)
+            SetState(new DeathState(this));
+
         StartCoroutine(m_state.Move());
 
         if (Colliding())
             m_velocity = new Vector3(0.0f, m_velocity.y, 0.0f);
 
+        GroundCheck();
 
         if (Input.GetButtonDown("Submit"))
         {
@@ -323,27 +116,27 @@ public class CharacterMovement : ICharacterStateMachine
         transform.position += m_velocity * Time.deltaTime;
     }
 
-    void Climb()
+    //WORK IN PROGRESS, can climb up and down, only on slopes facing the camera... for now
+    void GroundCheck()
     {
-        Vector3 perpVecToSlope = Vector3.Cross(transform.right, m_groundedHitInfo.normal);
-        Debug.DrawLine(transform.position, transform.position + perpVecToSlope);
-        m_velocity.y = perpVecToSlope.y * m_velocity.magnitude;
-    }
-
-    bool Climbable()
-    {
-        Vector3 perpVecToSlope = Vector3.Cross(transform.right, m_collisionHitInfo.normal);
-        float angleBetween = Vector3.Angle(perpVecToSlope, new Vector3(m_velocity.x, 0, m_velocity.z));        
-        if (Mathf.Abs(angleBetween) > m_maxClimbableIncline)
+        //do if grounded
+        if (m_state is DefaultState)
         {
-            return false;
-        }    
-        return true;
+            //if climbable, climb
+            Vector3 slopeDirection = Vector3.Cross(transform.right, m_groundedHitInfo.normal).normalized;
+            float angleBetween = Vector3.Angle(m_groundedHitInfo.normal, Vector3.up);
+            if (Mathf.Abs(angleBetween) < m_maxClimbableIncline)
+            {
+                //do climb
+                m_velocity.y = slopeDirection.y * m_direction.z * m_velocity.magnitude;
+            }
+        }
     }
 
     bool Colliding()
     {
-        return Physics.Raycast(new Vector3( transform.position.x, transform.position.y - (m_PlayerCollider.bounds.extents.y - 0.05f), transform.position.z), new Vector3(m_velocity.x, 0.0f, m_velocity.z).normalized, out m_collisionHitInfo, m_PlayerCollider.bounds.extents.x);
+        return Physics.Raycast(new Vector3(transform.position.x, transform.position.y - (m_PlayerCollider.bounds.extents.y - m_groundPadding), transform.position.z),
+            new Vector3(m_velocity.x, 0.0f, m_velocity.z).normalized, out m_collisionHitInfo, m_PlayerCollider.bounds.extents.x * m_collisionRayLengthMultiplyer);
     }
 
     public bool IsGrounded()
