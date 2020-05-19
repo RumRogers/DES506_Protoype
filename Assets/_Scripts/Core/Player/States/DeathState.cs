@@ -12,8 +12,8 @@ public class DeathState : ICharacterState
         Debug.Log("In DeathState!");
         m_characterMovment = stateMachine;
         m_characterMovment.transform.position = m_characterMovment.StartPosition;
-        m_characterMovment.Drowning = false;
-        m_characterMovment.SetState(new DefaultState(m_characterMovment));
+        //m_characterMovment.Drowning = false;
+        //m_characterMovment.SetState(new DefaultState(m_characterMovment));
     }
 
     public override IEnumerator Start()

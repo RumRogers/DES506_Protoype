@@ -26,11 +26,14 @@ namespace GameCore
         protected uint plane { get => plane; set => plane = value; }
         [SerializeField]
         TileType m_tileType;
+        [SerializeField]
+        float m_tileSize = 2.0f;
 
-        PlayerEffect m_playerEffect;
-        tmpBasicMovement m_tmpBasicMovement;
+        //PlayerEffect m_playerEffect;
+        //tmpBasicMovement m_tmpBasicMovement;
+        CharacterMovement m_characterMovement;
 
-        public void SetPlayerState()
+        /*public void SetPlayerState()
         {
             if(m_playerEffect == PlayerEffect.DEAD)
             {
@@ -40,13 +43,22 @@ namespace GameCore
             {
                 m_tmpBasicMovement.m_playerState = tmpBasicMovement.PlayerState.ALIVE;
             }
-        }
+        }*/
 
         public void Awake()
         {
-            GameObject player = GameObject.FindGameObjectWithTag("Player");
+            try
+            {
+                m_characterMovement = GameObject.FindGameObjectWithTag("Player").GetComponent<CharacterMovement>();
+            }
+            catch(UnityException ex)
+            {
+                print(ex.Message);
+            }
 
-            if (player != null)
+            //GameObject player = GameObject.FindGameObjectWithTag("Player");
+
+            /*if (player != null)
             {
                 m_tmpBasicMovement = player.GetComponent<tmpBasicMovement>();
             }
@@ -58,17 +70,41 @@ namespace GameCore
             if (m_tileType == TileType.GRASS)
             {
                 m_playerEffect = PlayerEffect.NOT_DEAD;
-            }
+            }*/
 
         }
 
-        private void OnTriggerEnter(Collider other)
+        /*private void OnTriggerEnter(Collider other)
         {
             if (other.CompareTag("Player"))
             {
                 SetPlayerState();
                 Debug.Log("State is " + m_tmpBasicMovement.m_playerState);
             }
+        }*/
+
+        private void Update()
+        {
+           if(IsPlayerInside())
+            {
+                //print("Player in tile of type " + m_tileType);
+                if(m_tileType == TileType.WATER && m_characterMovement.CanDrown && !m_characterMovement.Drowning)
+                {
+                    m_characterMovement.Drowning = true;
+                    print("Player now drowning!!!");
+                }
+            }
+
+        }
+
+        bool IsPlayerInside()
+        {
+            Vector3 pos = m_characterMovement.transform.position;
+
+            return (pos.x >= transform.position.x - m_tileSize / 2) &&
+                    (pos.x <= transform.position.x + m_tileSize / 2) &&
+                    (pos.z <= transform.position.z + m_tileSize / 2) &&
+                    (pos.z <= transform.position.z - m_tileSize / 2);
         }
     }
 }
