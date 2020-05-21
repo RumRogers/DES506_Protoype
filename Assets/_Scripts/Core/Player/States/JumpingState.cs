@@ -10,7 +10,13 @@ public class JumpingState : ICharacterState
     public JumpingState(CharacterMovement stateMachine) : base(stateMachine)
     {
         m_characterMovment = stateMachine;
-        m_characterMovment.Velocity = new Vector3(m_characterMovment.Velocity.x, m_characterMovment.JumpVelocity, m_characterMovment.Velocity.z);
+        //Adds velocity based on entity property flags
+        if (m_characterMovment.HasProperty(EntityProperties.JUMP_NORMAL))
+            m_characterMovment.Velocity = new Vector3(m_characterMovment.Velocity.x, m_characterMovment.JumpVelocity, m_characterMovment.Velocity.z);
+
+        if (m_characterMovment.HasProperty(EntityProperties.JUMP_HIGH)) 
+            m_characterMovment.Velocity = new Vector3(m_characterMovment.Velocity.x, m_characterMovment.HighJumpVelocity, m_characterMovment.Velocity.z);
+
         m_Velocity = m_characterMovment.Velocity;
     }
 
@@ -25,7 +31,11 @@ public class JumpingState : ICharacterState
         m_characterMovment.Velocity += (Vector3.down * m_characterMovment.Gravity) * Time.deltaTime;
 
         //Directional input, slower in mid air
-        m_characterMovment.Direction = new Vector3(Input.GetAxisRaw("Horizontal"), 0.0f, Input.GetAxisRaw("Vertical")).normalized;
+        Vector3 forwardMovement = new Vector3( Camera.main.transform.forward.x, 0, Camera.main.transform.forward.z )* Input.GetAxisRaw("Vertical");
+        Vector3 rightMovement = Camera.main.transform.right * Input.GetAxisRaw("Horizontal");
+        m_characterMovment.Direction = forwardMovement + rightMovement;
+        m_characterMovment.Direction = m_characterMovment.Direction.normalized;
+
         if (m_characterMovment.Direction != Vector3.zero)
         {
             m_Velocity += (m_characterMovment.Direction * m_characterMovment.AerialAccelleration) * Time.deltaTime;

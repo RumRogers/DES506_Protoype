@@ -26,7 +26,8 @@ public class PushingState : ICharacterState
             if (!m_moving)
             {
                 m_moving = true;
-                m_characterMovement.Direction = new Vector3(Input.GetAxisRaw("Horizontal"), 0.0f, Input.GetAxisRaw("Vertical")).normalized;
+                m_characterMovement.Direction = new Vector3(Input.GetAxisRaw("Horizontal"), 0.0f, Input.GetAxisRaw("Vertical"));
+                m_characterMovement.Direction = m_characterMovement.Direction / m_characterMovement.Direction.magnitude;
                 Vector3 finalPosition = m_characterMovement.transform.position + (m_characterMovement.Direction * GRID_SIZE);
                 Vector3 currentPosition = m_characterMovement.transform.position;
                 Vector3 movableOffset = m_characterMovement.GetClosestInteractable.position - m_characterMovement.transform.position;
@@ -50,6 +51,7 @@ public class PushingState : ICharacterState
                 }
                 m_characterMovement.transform.position = finalPosition;
                 m_moving = false;
+                yield break;
             }
         }
         yield return null;

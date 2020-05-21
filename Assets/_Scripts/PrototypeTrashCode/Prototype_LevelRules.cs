@@ -1,6 +1,7 @@
 ﻿using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.SceneManagement;
 
 public class Prototype_LevelRules : MonoBehaviour
 {
@@ -11,11 +12,19 @@ public class Prototype_LevelRules : MonoBehaviour
     [SerializeField]
     bool m_applied = false;
     CharacterMovement m_player;
+    List<Collider> m_waterPitColliders = new List<Collider>();
+
     private void Start()
     {
         try
         {
             m_player = GameObject.FindGameObjectWithTag("Player").GetComponent<CharacterMovement>();
+
+            GameObject waterPit = GameObject.Find("WaterPit");
+            foreach(Transform child in waterPit.transform)
+            {
+                m_waterPitColliders.Add(child.GetComponent<Collider>());
+            }
         }
         catch(UnityException ex)
         {
@@ -25,7 +34,11 @@ public class Prototype_LevelRules : MonoBehaviour
 
     private void Update()
     {
-        if(m_slot_2 != Prototype_RuleChunk.RuleChunkType.EMPTY && m_slot_3 != Prototype_RuleChunk.RuleChunkType.EMPTY && !m_applied)
+        if(Input.GetKeyDown(KeyCode.Escape))
+        {
+            SceneManager.LoadScene(SceneManager.GetActiveScene().name);
+        }
+        if(m_slot_2 != Prototype_RuleChunk.RuleChunkType.EMPTY && m_slot_3 != Prototype_RuleChunk.RuleChunkType.EMPTY)
         {            
             ApplyRule();
         }
@@ -40,10 +53,14 @@ public class Prototype_LevelRules : MonoBehaviour
             switch (m_slot_3)
             {
                 case Prototype_RuleChunk.RuleChunkType.OBJECT_JUMP:
-                    m_player.CanJump = true;
+                    m_player.AddEntityProperty(EntityProperties.JUMP_HIGH);
                     break;
                 case Prototype_RuleChunk.RuleChunkType.OBJECT_DROWN:
-                    m_player.CanDrown = true;                    
+                    m_player.CanDrown = true; 
+                    foreach(var collider in m_waterPitColliders)
+                    {
+                        collider.enabled = false;
+                    }
                     break;
                 default:
                     throw new UnityException("Unrecognized object rule chunk!");
@@ -71,11 +88,15 @@ public class Prototype_LevelRules : MonoBehaviour
         bool predicate = sortedChunk_1 == Prototype_RuleChunk.RuleChunkType.VERB_CAN ? false : true;
         if (sortedChunk_2 == Prototype_RuleChunk.RuleChunkType.OBJECT_JUMP)
         {
-            m_player.CanJump = predicate;
+            m_player.RemoveEntityProperty(EntityProperties.JUMP_HIGH);            
         }
         else if (sortedChunk_2 == Prototype_RuleChunk.RuleChunkType.OBJECT_DROWN)
         {
             m_player.CanDrown = predicate;
+            foreach (var collider in m_waterPitColliders)
+            {
+                collider.enabled = true;
+            }
         }
 
         print("Undo Rule: " + this + ", moved " + chunk1 + " away from " + chunk2);
